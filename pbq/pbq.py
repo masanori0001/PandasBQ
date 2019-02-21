@@ -4,7 +4,7 @@ import shutil
 from google.cloud import bigquery
 from google.cloud import storage as gcs
 import pandas as pd
-from pbq.util import random_string
+from util import random_string
 
 tmp_file_name = "tmp_extract.gz"
 
@@ -68,12 +68,10 @@ def _cp_file_from_gcs(bucket_name, gcs_path, local_path):
 
 
 def _delete_dir_from_gcs(bucket_name, gcs_path):
-    print(gcs_path)
     client = gcs.Client()
     bucket = client.get_bucket(bucket_name)
     blobs = bucket.list_blobs()
     for b in blobs:
-        print(b.name)
         if b.name == gcs_path:
             blob = bucket.blob(gcs_path)
             blob.delete()
