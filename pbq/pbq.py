@@ -9,12 +9,35 @@ from util import random_string
 tmp_file_name = "tmp_extract.gz"
 
 
+def read_bq_with_sql(project_id, location, query, tmp_dataset_id, tmp_gcs_bucket):
+    tmp_table_name = random_string(50)
+
+    client = bigquery.Client()
+    job_config = bigquery.QueryJobConfig()
+    table_ref = client.dataset(tmp_dataset_id).table(tmp_table_name)
+    job_config.destination = table_ref
+
+    try:
+        query_job = client.query(
+            query,
+            location=location,
+            job_config=job_config)
+        query_job.result()
+        pd_data = read_bq(project_id, tmp_dataset_id, tmp_table_name, tmp_gcs_bucket)
+    finally:
+        table_ref = client.dataset(tmp_dataset_id).table(tmp_table_name)
+        client.delete_table(table_ref)
+
+    return pd_data
+
+
 def read_bq(project_id, dataset_id, table_id, tmp_gcs_bucket):
     client = bigquery.Client()
 
     table = _setup_bq_table(client, project_id, dataset_id, table_id)
     random_file = _create_random_gcs_file()
     path = os.path.join("gs://", tmp_gcs_bucket, random_file)
+
     try:
         _extract_table(client, table, path)
         local_path = os.path.join(tempfile.mkdtemp(), tmp_file_name)
